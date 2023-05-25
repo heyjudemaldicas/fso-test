@@ -1,0 +1,13 @@
+.statistics {
+    display: flex;
+    flex-direction: column;
+}
+
+.anecdotes {
+    display: flex;
+    flex-direction: column;
+}
+
+button {
+    width: max-content;
+}
