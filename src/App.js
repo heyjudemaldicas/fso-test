@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import axios from 'axios';
+import phonebookService from './services/phonebookService';
 
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
@@ -13,32 +13,37 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        setPersons(response.data);
-    })
+    phonebookService.fetchPersons().then(response => {
+      setPersons(response);
+    });
   }, []);
 
   const handleSubmit = (event) => {
     event.preventDefault();
     if (newName.trim() === '' || number.trim() === '') return;
 
-    let match = persons.find(person => person.name.toLowerCase() === newName.toLowerCase());
+    let match = persons.find(person => person.name?.toLowerCase() === newName.toLowerCase());
     if (match) {
-      alert(`${newName} is already added to the phonebook!`);
-      setNewName('');
+      if (window.confirm(`${newName} is already added to the phonebook, replace the old number with a new one?`)) {
+        phonebookService.updatePerson(match.id, { name: newName, number: number }).then(response => {
+          setPersons(persons.map(person => person.id !== match.id ? person : response));
+          setNewName('');
+          setNumber('');
+        })
+      }
+      else return null;
     }
     else {
       let newPerson = {
-        id: persons.length + 1,
         name: newName,
         number: number
       };
-      let list = [...persons]
-      setPersons(list.concat(newPerson));
-      setNewName('');
-      setNumber('');
+
+      phonebookService.addPerson(newPerson).then(response => {
+        setPersons([...persons, response]);
+        setNewName('');
+        setNumber('');
+      });
     }
   };
 
@@ -47,7 +52,15 @@ const App = () => {
     setSearchTerm(term);
   }
 
-  const filtered = persons.filter(person => person.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const handleDelete = (id, name) => {
+    if (window.confirm(`Delete ${name}?`)) {
+      phonebookService.deletePerson(id).then(response => {
+        setPersons(persons.filter(person => person.id !== id));
+      });
+    }
+  }
+
+  const filtered = persons.filter(person => person?.name?.toLowerCase().includes(searchTerm?.toLowerCase()));
 
   const handleAddName = (event) => {
     setNewName(event.target.value);
@@ -64,7 +77,7 @@ const App = () => {
       <h3>Add a new</h3>
       <PersonForm newName={newName} handleAddName={handleAddName} number={number} handleNewNumber={handleNewNumber} handleSubmit={handleSubmit} />
       <h3>Numbers</h3>
-      <Persons filtered={filtered} />
+      <Persons filtered={filtered} handleDelete={handleDelete} />
     </div>
   );
 }

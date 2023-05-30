@@ -11,3 +11,7 @@
 button {
     width: max-content;
 }
+
+ul {
+    padding: unset;
+}
