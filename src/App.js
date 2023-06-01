@@ -11,6 +11,8 @@ const App = () => {
   const [newName, setNewName] = useState('');
   const [number, setNumber] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     phonebookService.fetchPersons().then(response => {
@@ -20,6 +22,7 @@ const App = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    setErrorMessage('');
     if (newName.trim() === '' || number.trim() === '') return;
 
     let match = persons.find(person => person.name?.toLowerCase() === newName.toLowerCase());
@@ -29,7 +32,12 @@ const App = () => {
           setPersons(persons.map(person => person.id !== match.id ? person : response));
           setNewName('');
           setNumber('');
-        })
+          setSuccessMessage(`${newName}'s mobile number has been updated.`);
+        }).catch(error => {
+          console.log(error);
+          setSuccessMessage('');
+          setErrorMessage(`Information of ${newName} has already been removed from the server.`);
+        });
       }
       else return null;
     }
@@ -43,6 +51,7 @@ const App = () => {
         setPersons([...persons, response]);
         setNewName('');
         setNumber('');
+        setSuccessMessage(`Added ${newName}.`);
       });
     }
   };
@@ -50,12 +59,18 @@ const App = () => {
   const handleSearch = (event) => {
     let term = event.target.value;
     setSearchTerm(term);
+    setSuccessMessage('');
   }
 
   const handleDelete = (id, name) => {
+    setErrorMessage('');
     if (window.confirm(`Delete ${name}?`)) {
       phonebookService.deletePerson(id).then(response => {
         setPersons(persons.filter(person => person.id !== id));
+      }).catch(error => {
+        console.log(error);
+        setSuccessMessage('');
+        setErrorMessage(`Unexpected error. Check server.`);
       });
     }
   }
@@ -64,16 +79,18 @@ const App = () => {
 
   const handleAddName = (event) => {
     setNewName(event.target.value);
+    setSuccessMessage('');
   }
 
   const handleNewNumber = (event) => {
     setNumber(event.target.value);
+    setSuccessMessage('');
   }
 
   return (
     <div>
       <h2>Phonebook</h2>
-      <Filter searchTerm={searchTerm} handleSearch={handleSearch} />
+      <Filter searchTerm={searchTerm} handleSearch={handleSearch} successMessage={successMessage} errorMessage={errorMessage} />
       <h3>Add a new</h3>
       <PersonForm newName={newName} handleAddName={handleAddName} number={number} handleNewNumber={handleNewNumber} handleSubmit={handleSubmit} />
       <h3>Numbers</h3>
